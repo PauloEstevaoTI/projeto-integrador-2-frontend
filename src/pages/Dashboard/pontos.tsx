@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../../services/api";
+import { useAuth } from "../../context/authContext";
 
 type RecordItem = {
   id: number;
@@ -9,7 +10,8 @@ type RecordItem = {
 };
 
 export function Pontos() {
-  const USER_ID = "a3b9fc18-0f53-4cbf-af35-f0759460af0f";
+  const { user } = useAuth();
+  //const USER_ID = "5bcf49b7-b445-4f5e-9219-0be463362bea";
   const [currentTime, setCurrentTime] = useState(new Date());
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -41,20 +43,52 @@ export function Pontos() {
     localStorage.setItem(`timeclock-${today}`, JSON.stringify(newRecords));
   };
 
-  const addRecord = async (type: "entrada" | "saida") => {
+  // const addRecord = async (type: "entrada" | "saida") => {
+  //   try {
+  //     // Define o endpoint correto baseado no tipo
+  //     // const endpoint =
+  //     //   type === "entrada" ? "/points/checkin" : "/points/checkout";
+
+  //     // Chama o backend passando user_id como query parameter
+  //     //await api.post(`${endpoint}?user_id=${USER_ID}`);
+  //     // await api.post(endpoint, null, {
+  //     //   params: { user_id: user?.id },
+  //     // });
+  //     await api.post("/points/checkout", null, {
+  //       params: { user_id: user?.id },
+  //     });
+  //     // Atualiza o registro local
+  //     const now = new Date();
+  //     const record: RecordItem = {
+  //       id: Date.now(),
+  //       type,
+  //       time: `${String(now.getHours()).padStart(2, "0")}:${String(
+  //         now.getMinutes()
+  //       ).padStart(2, "0")}`,
+  //       timestamp: now.getTime(),
+  //     };
+
+  //     const updated = [...records, record];
+  //     setRecords(updated);
+  //     saveRecords(updated);
+
+  //     // Atualiza estado de clock
+  //     setIsClocked(type === "entrada");
+  //   } catch (err: any) {
+  //     alert(err.response?.data?.detail || "Erro ao registrar ponto");
+  //   }
+  // };
+
+  const checkIn = async () => {
     try {
-      // Define o endpoint correto baseado no tipo
-      const endpoint =
-        type === "entrada" ? "/points/checkin" : "/points/checkout";
+      await api.post("/points/checkin", null, {
+        params: { user_id: user?.id },
+      });
 
-      // Chama o backend passando user_id como query parameter
-      await api.post(`${endpoint}?user_id=${USER_ID}`);
-
-      // Atualiza o registro local
       const now = new Date();
       const record: RecordItem = {
         id: Date.now(),
-        type,
+        type: "entrada",
         time: `${String(now.getHours()).padStart(2, "0")}:${String(
           now.getMinutes()
         ).padStart(2, "0")}`,
@@ -64,11 +98,37 @@ export function Pontos() {
       const updated = [...records, record];
       setRecords(updated);
       saveRecords(updated);
-
-      // Atualiza estado de clock
-      setIsClocked(type === "entrada");
+      setIsClocked(true);
+      alert(`✅ Entrada registrada às ${record.time}`);
     } catch (err: any) {
-      alert(err.response?.data?.detail || "Erro ao registrar ponto");
+      alert(err.response?.data?.detail || "Erro ao registrar entrada");
+    }
+  };
+
+  // Função para registrar saída
+  const checkOut = async () => {
+    try {
+      await api.post("/points/checkout", null, {
+        params: { user_id: user?.id },
+      });
+
+      const now = new Date();
+      const record: RecordItem = {
+        id: Date.now(),
+        type: "saida",
+        time: `${String(now.getHours()).padStart(2, "0")}:${String(
+          now.getMinutes()
+        ).padStart(2, "0")}`,
+        timestamp: now.getTime(),
+      };
+
+      const updated = [...records, record];
+      setRecords(updated);
+      saveRecords(updated);
+      setIsClocked(false);
+      alert(`✅ Saída registrada às ${record.time}`);
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "Erro ao registrar saída");
     }
   };
 
@@ -132,7 +192,7 @@ export function Pontos() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900">
-            Controle de Ponto
+            Controle de Ponto {user?.id}
           </h1>
           <p className="text-gray-600 mt-2">
             {new Date().toLocaleDateString("pt-BR")}
@@ -163,8 +223,7 @@ export function Pontos() {
         {/* Action Buttons */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <button
-            onClick={() => addRecord("entrada")}
-            disabled={isClocked}
+            onClick={checkIn}
             className="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition"
           >
             <span className="text-xl">↓</span> Entrada
@@ -181,8 +240,7 @@ export function Pontos() {
           </button>
 
           <button
-            onClick={() => addRecord("saida")}
-            disabled={!isClocked}
+            onClick={checkOut}
             className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition"
           >
             <span className="text-xl">↑</span> Saída

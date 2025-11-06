@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { api } from "../../services/api";
+import { useAuth } from "../../context/authContext";
 
 type FormData = {
   email: string;
@@ -10,6 +11,7 @@ type FormData = {
 
 export function Login() {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const { control, handleSubmit } = useForm<FormData>({
     defaultValues: {
@@ -32,21 +34,15 @@ export function Login() {
 
       const token = response.data.access_token;
 
-      // salva o token para as próximas requisições
       localStorage.setItem("token", token);
 
-      // busca dados do usuário logado
-      // const userRes = await api.get("/auth/me", {
-      //   headers: {
-      //     Authorization: `Bearer ${token}`,
-      //   },
-      // });
+      const meResponse = await api.get("/users/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      // const userData = userRes.data;
-      // console.log("usuário logado:", userData);
-
-      // opcional: salvar em contexto
-      // setUser(userData);
+      setUser(meResponse.data);
 
       navigate("/dashboard");
     } catch (error: any) {
