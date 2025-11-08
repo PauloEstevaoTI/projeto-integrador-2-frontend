@@ -31,6 +31,7 @@ export function Turmas() {
       students: [],
     };
     setClasses([...classes, newClass]);
+    setSelectedClass(newClass);
   };
 
   const handleUpdateClass = (updatedClass: Class) => {

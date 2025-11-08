@@ -20,6 +20,7 @@ export type User = {
 type AuthContextType = {
   user: User | null;
   setUser: (user: User | null) => void;
+  logout: () => void; // adiciona logout
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,7 +28,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
 
-  // função interna — serve para sincronizar com localStorage
   function setUser(user: User | null) {
     setUserState(user);
 
@@ -38,7 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // ao carregar o app — restaura do storage
+  // função de logout
+  function logout() {
+    setUser(null); // limpa estado e localStorage
+  }
+
   useEffect(() => {
     const stored = localStorage.getItem("user");
     if (stored) {
@@ -47,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, setUser }}>
+    <AuthContext.Provider value={{ user, setUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -11,7 +11,6 @@ type RecordItem = {
 
 export function Pontos() {
   const { user } = useAuth();
-  //const USER_ID = "5bcf49b7-b445-4f5e-9219-0be463362bea";
   const [currentTime, setCurrentTime] = useState(new Date());
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -19,6 +18,7 @@ export function Pontos() {
   const [inputMinute, setInputMinute] = useState("");
   const [recordType, setRecordType] = useState<"entrada" | "saida">("entrada");
   const [isClocked, setIsClocked] = useState(false);
+  const [loading, setLoading] = useState(false); // novo estado para spinner
 
   // Carregar dados do localStorage
   useEffect(() => {
@@ -43,44 +43,9 @@ export function Pontos() {
     localStorage.setItem(`timeclock-${today}`, JSON.stringify(newRecords));
   };
 
-  // const addRecord = async (type: "entrada" | "saida") => {
-  //   try {
-  //     // Define o endpoint correto baseado no tipo
-  //     // const endpoint =
-  //     //   type === "entrada" ? "/points/checkin" : "/points/checkout";
-
-  //     // Chama o backend passando user_id como query parameter
-  //     //await api.post(`${endpoint}?user_id=${USER_ID}`);
-  //     // await api.post(endpoint, null, {
-  //     //   params: { user_id: user?.id },
-  //     // });
-  //     await api.post("/points/checkout", null, {
-  //       params: { user_id: user?.id },
-  //     });
-  //     // Atualiza o registro local
-  //     const now = new Date();
-  //     const record: RecordItem = {
-  //       id: Date.now(),
-  //       type,
-  //       time: `${String(now.getHours()).padStart(2, "0")}:${String(
-  //         now.getMinutes()
-  //       ).padStart(2, "0")}`,
-  //       timestamp: now.getTime(),
-  //     };
-
-  //     const updated = [...records, record];
-  //     setRecords(updated);
-  //     saveRecords(updated);
-
-  //     // Atualiza estado de clock
-  //     setIsClocked(type === "entrada");
-  //   } catch (err: any) {
-  //     alert(err.response?.data?.detail || "Erro ao registrar ponto");
-  //   }
-  // };
-
   const checkIn = async () => {
     try {
+      setLoading(true);
       await api.post("/points/checkin", null, {
         params: { user_id: user?.id },
       });
@@ -102,12 +67,14 @@ export function Pontos() {
       alert(`✅ Entrada registrada às ${record.time}`);
     } catch (err: any) {
       alert(err.response?.data?.detail || "Erro ao registrar entrada");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Função para registrar saída
   const checkOut = async () => {
     try {
+      setLoading(true);
       await api.post("/points/checkout", null, {
         params: { user_id: user?.id },
       });
@@ -129,6 +96,8 @@ export function Pontos() {
       alert(`✅ Saída registrada às ${record.time}`);
     } catch (err: any) {
       alert(err.response?.data?.detail || "Erro ao registrar saída");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -169,15 +138,10 @@ export function Pontos() {
     for (let i = 0; i < records.length - 1; i++) {
       const current = records[i];
       const next = records[i + 1];
-
       if (current.type === "entrada" && next.type === "saida") {
-        const [currentHour, currentMin] = current.time.split(":").map(Number);
-        const [nextHour, nextMin] = next.time.split(":").map(Number);
-
-        const currentSeconds = currentHour * 3600 + currentMin * 60;
-        const nextSeconds = nextHour * 3600 + nextMin * 60;
-
-        totalSeconds += nextSeconds - currentSeconds;
+        const [ch, cm] = current.time.split(":").map(Number);
+        const [nh, nm] = next.time.split(":").map(Number);
+        totalSeconds += nh * 3600 + nm * 60 - (ch * 3600 + cm * 60);
         i++;
       }
     }
@@ -187,12 +151,19 @@ export function Pontos() {
   };
 
   return (
-    <div className="h-full bg-gradient-to-br from-blue-50 to-purple-50 p-6">
+    <div className="h-full bg-gradient-to-br from-blue-50 to-purple-50 p-6 relative">
+      {/* Overlay Spinner */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="w-16 h-16 border-4 border-t-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900">
-            Controle de Ponto {user?.id}
+            Controle de Ponto
           </h1>
           <p className="text-gray-600 mt-2">
             {new Date().toLocaleDateString("pt-BR")}
@@ -224,6 +195,7 @@ export function Pontos() {
         <div className="grid grid-cols-3 gap-4 mb-6">
           <button
             onClick={checkIn}
+            disabled={isClocked}
             className="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition"
           >
             <span className="text-xl">↓</span> Entrada
@@ -241,6 +213,7 @@ export function Pontos() {
 
           <button
             onClick={checkOut}
+            disabled={!isClocked}
             className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition"
           >
             <span className="text-xl">↑</span> Saída

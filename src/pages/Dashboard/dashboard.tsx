@@ -69,7 +69,7 @@ export function Dashboard() {
           </nav>
         </aside>
 
-        <section className="col-span-5 bg-white rounded-md">
+        <section className="col-span-5 bg-white rounded-md p-5">
           <Outlet />
         </section>
       </main>

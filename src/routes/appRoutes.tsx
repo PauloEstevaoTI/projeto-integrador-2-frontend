@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router";
+import { Routes, Route, Navigate } from "react-router";
 import { Login } from "../pages/Auth/login";
 import { Register } from "../pages/Auth/register";
 import { NotFound } from "../pages/notFound";
@@ -13,6 +13,7 @@ export function AppRoutes() {
       <Route path="/" index element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/dashboard" element={<Dashboard />}>
+        <Route index element={<Navigate to="pontos" replace />} />
         <Route path="pontos" element={<Pontos />} />
         <Route path="turmas" element={<Turmas />} />
         <Route path="alunos" element={<Alunos />} />

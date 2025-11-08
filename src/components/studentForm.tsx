@@ -2,6 +2,8 @@ import type React from "react";
 
 import { useState } from "react";
 import type { Student } from "../types/index";
+import { useAuth } from "../context/authContext";
+import { api } from "../services/api";
 // import { X } from "lucide-react";
 
 interface StudentFormProps {
@@ -15,27 +17,44 @@ export default function StudentForm({
   onCancel,
   initialData,
 }: StudentFormProps) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
-    registrationNumber: initialData?.registrationNumber || "",
-    email: initialData?.email || "",
   });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.name && formData.registrationNumber) {
-      onSubmit({
-        name: formData.name,
-        registrationNumber: formData.registrationNumber,
-        email: formData.email,
-        grades: initialData?.grades || [],
-        attendance: initialData?.attendance || [],
-      });
+
+    if (formData.name) {
+      try {
+        // Envia para a API
+        const response = await api.post(
+          `/classes/${user?.id}/students`,
+          formData
+        );
+
+        // Opcional: pega o aluno retornado pela API
+        const newStudent = response.data;
+        console.log("Aluno criado:", newStudent);
+
+        // Chama onSubmit se precisar atualizar o estado local
+        onSubmit(newStudent);
+
+        alert("Aluno adicionado com sucesso!");
+
+        // Limpa formulário
+        setFormData({
+          name: "",
+        });
+      } catch (error: any) {
+        console.error(error);
+        alert(error.response?.data?.message || "Falha ao adicionar aluno.");
+      }
+    } else {
+      alert("Preencha os campos obrigatórios.");
     }
   };
-
   return (
-    <div className="max-w-2xl mb-8">
+    <div className="max-w-2xl mb-8 mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-foreground">
           {initialData ? "Editar Aluno" : "Novo Aluno"}
@@ -69,7 +88,7 @@ export default function StudentForm({
             />
           </div>
 
-          <div>
+          {/* <div>
             <label className="block text-sm font-semibold text-foreground mb-2">
               Matrícula
             </label>
@@ -83,8 +102,8 @@ export default function StudentForm({
               className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               required
             />
-          </div>
-
+          </div> */}
+          {/* 
           <div className="md:col-span-2">
             <label className="block text-sm font-semibold text-foreground mb-2">
               Email
@@ -98,7 +117,7 @@ export default function StudentForm({
               placeholder="Email do aluno"
               className="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
-          </div>
+          </div> */}
         </div>
 
         <div className="flex gap-3">

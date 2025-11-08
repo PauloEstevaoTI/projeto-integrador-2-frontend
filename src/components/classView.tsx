@@ -1,8 +1,7 @@
-"use client";
-
 import type { Class } from "../types/index";
 import type React from "react";
 import { useState } from "react";
+import { api } from "../services/api";
 
 interface ClassesViewProps {
   classes: Class[];
@@ -23,12 +22,27 @@ export default function ClassesView({
     period: "Matutino",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.name && formData.grade && formData.teacher) {
-      onCreateClass(formData);
+
+    if (!formData.name || !formData.grade || !formData.teacher) {
+      alert("Preencha todos os campos obrigatórios!");
+      return;
+    }
+
+    try {
+      const response = await api.post("/classes", formData);
+
+      // se chegou aqui -> deu certo
+      onCreateClass(response.data);
+
+      alert("Turma criada com sucesso!");
+
       setFormData({ name: "", grade: "", teacher: "", period: "Matutino" });
       setShowForm(false);
+    } catch (error) {
+      alert("Erro ao criar turma. Tente novamente.");
+      console.error(error);
     }
   };
 
@@ -75,7 +89,7 @@ export default function ClassesView({
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="ex: 7º Ano A"
+                  placeholder="Turma A"
                   className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
@@ -155,7 +169,7 @@ export default function ClassesView({
           {!showForm && (
             <button
               onClick={() => setShowForm(true)}
-              className="w-full bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+              className=" bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
             >
               <svg
                 className="w-5 h-5"
@@ -242,7 +256,7 @@ export default function ClassesView({
             </table>
           </div>
         </div>
-      ) : (
+      ) : !showForm ? (
         <div className="bg-card border border-border rounded-lg p-12 text-center">
           <svg
             className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50"
@@ -250,8 +264,9 @@ export default function ClassesView({
             viewBox="0 0 20 20"
           >
             <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.38V4.804z" />
-            <path d="M11 15.113v-9.31A3.987 3.987 0 0115.5 9c1.25 0 2.443.29 3.5.804v10A7.968 7.968 0 0015.5 14c-1.669 0-3.218.51-4.5 1.38z" />
+            <path d="M11 15.113v-9.3A3.987 3.987 0 0115.5 9c1.25 0 2.443.29 3.5.804v10A7.968 7.968 0 0015.5 14c-1.669 0-3.218.51-4.5 1.38z" />
           </svg>
+
           <h3 className="text-lg font-semibold text-foreground mb-2">
             Nenhuma turma criada
           </h3>
@@ -278,7 +293,7 @@ export default function ClassesView({
             Criar Turma
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

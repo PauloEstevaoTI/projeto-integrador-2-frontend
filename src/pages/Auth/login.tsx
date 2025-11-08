@@ -12,7 +12,8 @@ type FormData = {
 export function Login() {
   const navigate = useNavigate();
   const { setUser } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+
+  const [loading, setLoading] = useState(false);
   const { control, handleSubmit } = useForm<FormData>({
     defaultValues: {
       email: "",
@@ -22,7 +23,7 @@ export function Login() {
 
   async function onSubmit(data: FormData) {
     try {
-      setIsLoading(true);
+      setLoading(true);
 
       const formData = new URLSearchParams();
       formData.append("username", data.email);
@@ -48,7 +49,7 @@ export function Login() {
     } catch (error: any) {
       alert(error?.response?.data?.detail || "Erro ao fazer o login");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }
 
@@ -58,6 +59,13 @@ export function Login() {
 
   return (
     <div className="w-full h-screen flex justify-center items-center bg-gray-100">
+      {/* Overlay Spinner */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="w-16 h-16 border-4 border-t-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+
       <div className="w-[312px] flex flex-col justify-center items-center gap-4 h-full">
         <h1 className="text-2xl uppercase font-bold text-center">Login</h1>
 
@@ -97,8 +105,8 @@ export function Login() {
             />
           </div>
 
-          <button type="submit" className="btn-primary" disabled={isLoading}>
-            {isLoading ? "Entrando..." : "Entrar"}
+          <button type="submit" className="btn-primary" disabled={loading}>
+            Entrar
           </button>
         </form>
 
