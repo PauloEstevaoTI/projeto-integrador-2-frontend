@@ -27,7 +27,7 @@ export default function ClassDetail({
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        const response = await api.get("/classes/");
+        const response = await api.get(`classes/by_user/${user?.id}`);
         setClasses(response.data); // assume que a API retorna um array de classes
       } catch (error: any) {
         console.error(error.response?.data || error.message);
@@ -61,17 +61,20 @@ export default function ClassDetail({
     }
   };
 
-  const handleDeleteStudent = (studentId: string) => {
-    onUpdate({
-      ...classItem,
-      students: classItem.students.filter((s) => s.id !== studentId),
-    });
+  const handleDeleteStudent = async (classId: string) => {
+    try {
+      await api.delete(`classes/${classId}`);
+      alert("Usuário excluido com sucesso");
+    } catch (error: any) {
+      console.error(error.response?.data || error.message);
+      alert("Falha ao deletar aluno.");
+    }
   };
 
-  const handleDeleteClass = () => {
+  const handleDeleteClass = (classId: string) => {
     if (window.confirm("Tem certeza que deseja deletar esta turma?")) {
-      onDelete(classItem.id);
-      onBack();
+      onDelete(classId);
+      handleDeleteStudent(classId);
     }
   };
 
@@ -95,7 +98,7 @@ export default function ClassDetail({
                 {classItem.name}
               </h1>
               <p className="text-muted-foreground">
-                {classItem.grade} Prof. {classItem.teacher} {classItem.period}
+                {classItem.grade} Prof. {classItem.teacher}
               </p>
             </div>
           </div>
@@ -117,16 +120,7 @@ export default function ClassDetail({
           }}
           initialData={editingStudent || undefined}
         />
-      ) : (
-        <div>
-          <button
-            onClick={() => setShowStudentForm(true)}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-primary/90 transition-colors mb-6"
-          >
-            + Adicionar Aluno
-          </button>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

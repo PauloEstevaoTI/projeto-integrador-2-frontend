@@ -23,6 +23,6 @@ export interface Class {
   name: string;
   grade: string;
   teacher: string;
-  period: string;
   students: Student[];
+  students_count?: number;
 }

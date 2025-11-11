@@ -151,7 +151,7 @@ export function Pontos() {
   };
 
   return (
-    <div className="h-full bg-gradient-to-br from-blue-50 to-purple-50 p-6 relative">
+    <div className="h-full p-6 relative">
       {/* Overlay Spinner */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -195,7 +195,6 @@ export function Pontos() {
         <div className="grid grid-cols-3 gap-4 mb-6">
           <button
             onClick={checkIn}
-            disabled={isClocked}
             className="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition"
           >
             <span className="text-xl">↓</span> Entrada
@@ -213,7 +212,6 @@ export function Pontos() {
 
           <button
             onClick={checkOut}
-            disabled={!isClocked}
             className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition"
           >
             <span className="text-xl">↑</span> Saída

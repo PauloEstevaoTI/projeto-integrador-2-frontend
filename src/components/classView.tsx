@@ -1,7 +1,8 @@
 import type { Class } from "../types/index";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../services/api";
+import { useAuth } from "../context/authContext";
 
 interface ClassesViewProps {
   classes: Class[];
@@ -14,13 +15,27 @@ export default function ClassesView({
   onSelectClass,
   onCreateClass,
 }: ClassesViewProps) {
+  const { user } = useAuth();
+  const [allClasses, setAllClasses] = useState<Class[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     grade: "",
     teacher: "",
-    period: "Matutino",
   });
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const response = await api.get(`classes/by_user/${user?.id}`);
+        setAllClasses(response.data); // assume que a API retorna um array de classes
+      } catch (error: any) {
+        console.error(error.response?.data || error.message);
+        alert("Falha ao buscar turmas.");
+      }
+    };
+    fetchClasses();
+  }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,15 +45,20 @@ export default function ClassesView({
       return;
     }
 
+    const body = {
+      ...formData, // name, grade, teacher
+      owner: user?.id, // aqui adicionamos o dono
+    };
+
     try {
-      const response = await api.post("/classes", formData);
+      const response = await api.post("/classes", body);
 
       // se chegou aqui -> deu certo
       onCreateClass(response.data);
 
       alert("Turma criada com sucesso!");
 
-      setFormData({ name: "", grade: "", teacher: "", period: "Matutino" });
+      setFormData({ name: "", grade: "", teacher: "" });
       setShowForm(false);
     } catch (error) {
       alert("Erro ao criar turma. Tente novamente.");
@@ -126,23 +146,6 @@ export default function ClassesView({
                   required
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Período
-                </label>
-                <select
-                  value={formData.period}
-                  onChange={(e) =>
-                    setFormData({ ...formData, period: e.target.value })
-                  }
-                  className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option>Matutino</option>
-                  <option>Vespertino</option>
-                  <option>Noturno</option>
-                </select>
-              </div>
             </div>
 
             <div className="flex gap-4">
@@ -164,7 +167,7 @@ export default function ClassesView({
         </div>
       )}
 
-      {classes.length > 0 ? (
+      {allClasses.length > 0 ? (
         <div className="space-y-4">
           {!showForm && (
             <button
@@ -201,9 +204,7 @@ export default function ClassesView({
                   <th className="text-left py-4 px-4 font-semibold text-foreground">
                     Professor
                   </th>
-                  <th className="text-left py-4 px-4 font-semibold text-foreground">
-                    Período
-                  </th>
+
                   <th className="text-left py-4 px-4 font-semibold text-foreground">
                     Alunos
                   </th>
@@ -213,7 +214,7 @@ export default function ClassesView({
                 </tr>
               </thead>
               <tbody>
-                {classes.map((classItem) => (
+                {allClasses.map((classItem) => (
                   <tr
                     key={classItem.id}
                     className="border-b border-border hover:bg-secondary transition-colors"
@@ -227,9 +228,7 @@ export default function ClassesView({
                     <td className="py-4 px-4 text-foreground">
                       {classItem.teacher}
                     </td>
-                    <td className="py-4 px-4 text-foreground">
-                      {classItem.period}
-                    </td>
+
                     <td className="py-4 px-4">
                       <span className="inline-flex items-center gap-2 text-primary font-semibold">
                         <svg
@@ -239,7 +238,7 @@ export default function ClassesView({
                         >
                           <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
                         </svg>
-                        {classItem.students.length}
+                        {classItem.students_count}
                       </span>
                     </td>
                     <td className="py-4 px-4">

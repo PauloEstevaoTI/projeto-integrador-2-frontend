@@ -27,10 +27,7 @@ export default function StudentForm({
     if (formData.name) {
       try {
         // Envia para a API
-        const response = await api.post(
-          `/classes/${user?.id}/students`,
-          formData
-        );
+        const response = await api.post(`/students/${user?.id}`, formData);
 
         // Opcional: pega o aluno retornado pela API
         const newStudent = response.data;

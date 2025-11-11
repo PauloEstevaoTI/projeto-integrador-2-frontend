@@ -6,6 +6,7 @@ import { Dashboard } from "../pages/Dashboard/dashboard";
 import { Pontos } from "../pages/Dashboard/pontos";
 import { Turmas } from "../pages/Dashboard/turmas";
 import { Alunos } from "../pages/Dashboard/alunos";
+import { Relatorios } from "../pages/Dashboard/relatorios";
 
 export function AppRoutes() {
   return (
@@ -17,8 +18,8 @@ export function AppRoutes() {
         <Route path="pontos" element={<Pontos />} />
         <Route path="turmas" element={<Turmas />} />
         <Route path="alunos" element={<Alunos />} />
-        {/* <Route path="relatorios" element={<Relatorios />} />
-        <Route path="configuracoes" element={<Configuracoes />} /> */}
+        <Route path="relatorios" element={<Relatorios />} />
+        {/* <Route path="configuracoes" element={<Configuracoes />} />  */}
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
