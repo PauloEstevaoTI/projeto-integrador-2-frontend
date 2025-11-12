@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/authContext";
 import { api } from "../../services/api";
-import type { Class, Student } from "../../types";
+import {
+  type GradeStudent,
+  type Class,
+  type Student,
+  type AttendaceStudent,
+} from "../../types";
 
 export function Alunos() {
   const { user } = useAuth();
@@ -11,8 +16,25 @@ export function Alunos() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [gradeStudent, setGradeStudent] = useState<GradeStudent[]>([]);
+  const [attendanceStudent, setAttendanceStudent] = useState<
+    AttendaceStudent[]
+  >([]);
   const [formData, setFormData] = useState({
     name: "",
+  });
+
+  // Estados para modais de notas e faltas
+  const [showGradesModal, setShowGradesModal] = useState(false);
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [gradeForm, setGradeForm] = useState({
+    subject: "",
+    value: "",
+  });
+  const [attendanceForm, setAttendanceForm] = useState({
+    date: "",
+    present: true,
   });
 
   // Buscar turmas do usuário logado
@@ -45,10 +67,19 @@ export function Alunos() {
   //     setLoading(false);
   //   }
   // };
+  const fetchGradesStudent = async (student_id: string) => {
+    try {
+      const response = await api.get(`/grades/`, {
+        params: { student_id },
+      });
+      setGradeStudent(response.data);
+    } catch (error: any) {
+      console.error("Erro ao buscar notas", error);
+      alert(error.response?.data?.message || "Falha ao buscar notas.");
+    }
+  };
 
   const fetchStudents = async (classId: string) => {
-    console.log("AQUIIII!");
-    console.log(classId);
     try {
       setLoading(true);
       const response = await api.get(`/students/?class_id=${classId}`);
@@ -134,6 +165,73 @@ export function Alunos() {
       console.error("Erro ao excluir aluno:", error);
       alert(error.response?.data?.message || "Falha ao excluir aluno.");
     }
+  };
+
+  // Funções para gerenciar notas
+  const handleOpenGrades = (student: Student) => {
+    setSelectedStudent(student);
+    setShowGradesModal(true);
+    fetchGradesStudent(student.id);
+  };
+
+  const handleAddGrade = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudent) return;
+
+    try {
+      await api.post(`/grades/`, {
+        description: gradeForm.subject,
+        value: parseFloat(gradeForm.value),
+        student_id: selectedStudent.id,
+      });
+      alert("Nota adicionada com sucesso!");
+      setGradeForm({ subject: "", value: "" });
+      if (selectedClass) fetchStudents(selectedClass.id);
+    } catch (error: any) {
+      console.error("Erro ao adicionar nota:", error);
+      alert(error.response?.data?.message || "Falha ao adicionar nota.");
+    }
+
+    fetchGradesStudent(selectedStudent.id);
+  };
+
+  // Funções para gerenciar faltas
+  const handleOpenAttendance = (student: Student) => {
+    setSelectedStudent(student);
+    setShowAttendanceModal(true);
+    fetchAttendanceStudent(student.id);
+  };
+
+  const fetchAttendanceStudent = async (studentId: string) => {
+    try {
+      const response = await api.get(`attendances/?student_id=${studentId}`);
+      setAttendanceStudent(response.data);
+    } catch (error: any) {
+      console.error("Erro ao buscar faltas do aluno:", error);
+      alert(
+        error.response?.data?.message || "Falha ao buscar faltas do aluno."
+      );
+    }
+  };
+
+  const handleAddAttendance = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudent) return;
+
+    try {
+      await api.post(`/attendances`, {
+        date: attendanceForm.date,
+        student_id: selectedStudent.id,
+        status: attendanceForm.present,
+      });
+      alert("Nota registrada com sucesso!");
+      setAttendanceForm({ date: "", present: true });
+      // if (selectedClass) fetchStudents(selectedStudent.id);
+    } catch (error: any) {
+      console.error("Erro ao registrar presença:", error);
+      alert(error.response?.data?.message || "Falha ao registrar presença.");
+    }
+    fetchAttendanceStudent(selectedStudent.id);
   };
 
   if (loading) {
@@ -387,12 +485,12 @@ export function Alunos() {
                   <th className="text-left py-4 px-4 font-semibold text-foreground">
                     Nome
                   </th>
-                  {/* <th className="text-left py-4 px-4 font-semibold text-foreground">
-                    Matrícula
+                  <th className="text-center py-4 px-4 font-semibold text-foreground">
+                    Notas
                   </th>
-                  <th className="text-left py-4 px-4 font-semibold text-foreground">
-                    Email
-                  </th> */}
+                  <th className="text-center py-4 px-4 font-semibold text-foreground">
+                    Faltas
+                  </th>
                   <th className="text-right py-4 px-4 font-semibold text-foreground">
                     Ações
                   </th>
@@ -407,7 +505,50 @@ export function Alunos() {
                     <td className="py-4 px-4 text-foreground font-medium">
                       {student.name}
                     </td>
-
+                    <td className="py-4 px-4 text-center">
+                      <button
+                        onClick={() => handleOpenGrades(student)}
+                        className="bg-purple-500 text-white px-3 py-1.5 rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium inline-flex items-center gap-1"
+                        title="Gerenciar Notas"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                        Notas
+                      </button>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <button
+                        onClick={() => handleOpenAttendance(student)}
+                        className="bg-orange-500 text-white px-3 py-1.5 rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium inline-flex items-center gap-1"
+                        title="Gerenciar Faltas"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                        Faltas
+                      </button>
+                    </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center justify-end gap-2">
                         <button
@@ -497,6 +638,258 @@ export function Alunos() {
           </button>
         </div>
       ) : null}
+
+      {/* Modal de Notas */}
+      {showGradesModal && selectedStudent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-gray-300 rounded-lg shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-foreground">
+                Notas - {selectedStudent.name}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowGradesModal(false);
+                  setSelectedStudent(null);
+                  setGradeForm({ subject: "", value: "" });
+                }}
+                className="w-8 h-8 flex items-center justify-center hover:bg-secondary rounded-lg transition-colors text-foreground"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Formulário para adicionar nota */}
+            <form
+              onSubmit={handleAddGrade}
+              className="mb-6 p-4 bg-gray-100 rounded-lg"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Adicionar Nova Nota
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Matéria *
+                  </label>
+                  <input
+                    type="text"
+                    value={gradeForm.subject}
+                    onChange={(e) =>
+                      setGradeForm({ ...gradeForm, subject: e.target.value })
+                    }
+                    placeholder="Ex: Matemática"
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Nota *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="10"
+                    value={gradeForm.value}
+                    onChange={(e) =>
+                      setGradeForm({ ...gradeForm, value: e.target.value })
+                    }
+                    placeholder="0.0"
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                {/* <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Data *
+                  </label>
+                  <input
+                    type="date"
+                    value={gradeForm.date}
+                    onChange={(e) =>
+                      setGradeForm({ ...gradeForm, date: e.target.value })
+                    }
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div> */}
+              </div>
+              <button
+                type="submit"
+                className="mt-4 w-full bg-purple-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-600 transition-colors"
+              >
+                Adicionar Nota
+              </button>
+            </form>
+
+            {/* Lista de notas */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Histórico de Notas
+              </h3>
+              {gradeStudent && gradeStudent.length > 0 ? (
+                <div className="space-y-2">
+                  {gradeStudent.map((grade, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-gray-100 rounded-lg"
+                    >
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {grade.description}
+                        </p>
+                      </div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {grade.value.toFixed(1)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">
+                  Nenhuma nota registrada ainda
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Faltas */}
+      {showAttendanceModal && selectedStudent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-gray-300 rounded-lg shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Presença - {selectedStudent.name}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowAttendanceModal(false);
+                  setSelectedStudent(null);
+                  setAttendanceForm({ date: "", present: true });
+                }}
+                className="w-8 h-8 flex items-center justify-center hover:bg-secondary rounded-lg transition-colors text-foreground"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Formulário para registrar presença */}
+            <form
+              onSubmit={handleAddAttendance}
+              className="mb-6 p-4 bg-gray-100 rounded-lg"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Registrar Presença
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Data *
+                  </label>
+                  <input
+                    type="date"
+                    value={attendanceForm.date}
+                    onChange={(e) =>
+                      setAttendanceForm({
+                        ...attendanceForm,
+                        date: e.target.value,
+                      })
+                    }
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Status *
+                  </label>
+                  <select
+                    value={attendanceForm.present ? "true" : "false"}
+                    onChange={(e) =>
+                      setAttendanceForm({
+                        ...attendanceForm,
+                        present: e.target.value === "true",
+                      })
+                    }
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="true">Presente</option>
+                    <option value="false">Ausente</option>
+                  </select>
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="mt-4 w-full bg-orange-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+              >
+                Registrar Presença
+              </button>
+            </form>
+
+            {/* Lista de presenças */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Histórico de Presença
+              </h3>
+              {attendanceStudent && attendanceStudent.length > 0 ? (
+                <div className="space-y-2">
+                  {attendanceStudent.map((record, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-gray-100 rounded-lg"
+                    >
+                      <p className="text-gray-900">
+                        {new Date(record.date).toLocaleDateString("pt-BR")}
+                      </p>
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          record.status
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {record.status ? "Presente" : "Ausente"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">
+                  Nenhum registro de presença ainda
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

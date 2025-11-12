@@ -7,13 +7,21 @@ import { Pontos } from "../pages/Dashboard/pontos";
 import { Turmas } from "../pages/Dashboard/turmas";
 import { Alunos } from "../pages/Dashboard/alunos";
 import { Relatorios } from "../pages/Dashboard/relatorios";
+import { ProtectedRoute } from "../components/ProtectedRoute";
 
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" index element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/dashboard" element={<Dashboard />}>
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<Navigate to="pontos" replace />} />
         <Route path="pontos" element={<Pontos />} />
         <Route path="turmas" element={<Turmas />} />

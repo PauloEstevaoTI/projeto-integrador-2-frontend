@@ -7,8 +7,8 @@ type PointRecord = {
   user_id: string;
   check_in: string;
   check_out: string | null;
-  date: string;
-  total_hours: string | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
 type GroupedRecords = {
@@ -51,7 +51,8 @@ export function Relatorios() {
       params.append('start_date', startDate);
       params.append('end_date', endDate);
 
-      const response = await api.get(`/points/user/${user.id}?${params.toString()}`);
+      const url = `/points/user/${user.id}?${params.toString()}`;
+      const response = await api.get(url);
       setRecords(response.data);
     } catch (error: any) {
       console.error("Erro ao buscar registros:", error);
@@ -88,22 +89,34 @@ export function Relatorios() {
   };
 
   const groupRecordsByDate = (): GroupedRecords => {
-    return records.reduce((acc, record) => {
-      const date = new Date(record.date).toLocaleDateString("pt-BR");
+    const grouped = records.reduce((acc, record) => {
+      // Usar check_in como referência de data, convertendo para fuso horário local
+      const date = new Date(record.check_in).toLocaleDateString("pt-BR", {
+        timeZone: "America/Sao_Paulo"
+      });
+      
       if (!acc[date]) {
         acc[date] = [];
       }
       acc[date].push(record);
       return acc;
     }, {} as GroupedRecords);
+    
+    return grouped;
   };
 
   const formatTime = (datetime: string | null) => {
     if (!datetime) return "-";
-    return new Date(datetime).toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    
+    // Parse do datetime UTC e subtrai 3 horas manualmente
+    const date = new Date(datetime);
+    const offsetMinutes = date.getTimezoneOffset(); // Diferença em minutos do UTC
+    const localDate = new Date(date.getTime() - (offsetMinutes * 60 * 1000));
+    
+    const hours = String(localDate.getHours()).padStart(2, "0");
+    const minutes = String(localDate.getMinutes()).padStart(2, "0");
+    
+    return `${hours}:${minutes}`;
   };
 
   const calculateTotalHours = (checkIn: string, checkOut: string | null) => {
@@ -116,17 +129,19 @@ export function Relatorios() {
     return `${hours}h ${minutes}m`;
   };
 
-  const getDaysInMonth = () => {
+  const getDaysInMonth = (groupedRecords: GroupedRecords) => {
     const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
     const days = [];
     
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(selectedYear, selectedMonth - 1, day);
       const dateString = date.toLocaleDateString("pt-BR");
+      const dayRecords = groupedRecords[dateString] || [];
+      
       days.push({
         day,
         dateString,
-        records: groupedRecords[dateString] || []
+        records: dayRecords
       });
     }
     
@@ -142,7 +157,7 @@ export function Relatorios() {
   }
 
   const groupedRecords = groupRecordsByDate();
-  const daysInMonth = getDaysInMonth();
+  const daysInMonth = getDaysInMonth(groupedRecords);
 
   return (
     <div>
@@ -251,8 +266,7 @@ export function Relatorios() {
                     </td>
                     <td className="py-3 px-4 text-foreground">
                       {record
-                        ? record.total_hours ||
-                          calculateTotalHours(record.check_in, record.check_out)
+                        ? calculateTotalHours(record.check_in, record.check_out)
                         : "-"}
                     </td>
                     <td className="py-3 px-4 text-center">

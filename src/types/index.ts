@@ -26,3 +26,18 @@ export interface Class {
   students: Student[];
   students_count?: number;
 }
+
+export interface GradeStudent {
+  value: number;
+  description: string;
+  id: string;
+  student_id: string;
+  date: string;
+}
+
+export interface AttendaceStudent {
+  date: string;
+  status: boolean;
+  id: string;
+  student_id: string;
+}

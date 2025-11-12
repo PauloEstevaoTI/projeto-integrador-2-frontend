@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // função de logout
   function logout() {
     setUser(null); // limpa estado e localStorage
+    localStorage.removeItem("token"); // remove o token de autenticação
   }
 
   useEffect(() => {
